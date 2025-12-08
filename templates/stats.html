@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Estadísticas - PADEL</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+  </head>
+  <body>
+    <div class="app-wrap">
+      <div class="container">
+        <div class="topbar">
+          <div class="brand">
+            <div class="brand-logo">PD</div>
+            <div>
+              <div class="brand-title">PADEL Manager</div>
+              <div class="subtle">Estadísticas y resultados</div>
+            </div>
+          </div>
+          <div>
+            <a class="btn secondary" href="/">Volver</a>
+          </div>
+        </div>
+      <div style="display:flex; gap:16px; align-items:center;">
+        <button id="export-csv">Exportar CSV</button>
+        <button id="refresh-stats">Actualizar</button>
+      </div>
+      <canvas id="stats-chart" style="max-width:800px; margin-top:12px;"></canvas>
+      <table class="players-table" id="stats-table">
+        <thead><tr><th>ID</th><th>Nombre</th><th>Jugados</th><th>Victorias</th><th>Derrotas</th><th>% victorias</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <script src="/static/vendor/chartjs/chart.umd.min.js"></script>
+    <script src="/static/js/stats.js"></script>
+  </body>
+</html>

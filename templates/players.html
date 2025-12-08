@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Jugadores - PADEL</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+  </head>
+  <body>
+    <div class="app-wrap">
+      <div class="container">
+        <div class="topbar">
+          <div class="brand">
+            <div class="brand-logo">PD</div>
+            <div>
+              <div class="brand-title">PADEL Manager</div>
+              <div class="subtle">Administración de jugadores</div>
+            </div>
+          </div>
+          <div>
+            <a class="btn secondary" href="/">Volver</a>
+          </div>
+        </div>
+
+        <h3 style="margin-top:6px">Agregar jugador</h3>
+        <form id="player-form" style="display:flex; gap:8px; align-items:end; margin-bottom:12px">
+          <div style="flex:1"><label class="field">Nombre<br><input id="first_name" required></label></div>
+          <div style="flex:1"><label class="field">Apellido<br><input id="last_name"></label></div>
+          <div><button class="btn" type="submit">Agregar</button></div>
+        </form>
+
+        <h3 style="margin-top:6px">Listado</h3>
+        <table class="players-table" id="players-table">
+          <thead><tr><th>ID</th><th>Nombre</th><th>Apellido</th><th>Acciones</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <script src="/static/js/players.js"></script>
+  </body>
+</html>
