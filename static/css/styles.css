@@ -1,54 +1,147 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap');
 
-:root{
-	--bg:#0f1724; /* navy-like */
-	--card:#0b1220;
-	--accent:#ff5a1f; /* sporty orange */
-	--muted:#9aa6b2;
-	--white:#ffffff;
+:root {
+    /* Padel Blue Theme */
+    --bg-court: #1C5D99; /* Azul pista clásico */
+    --bg-dark: #0f3457;  /* Azul oscuro zonas externas */
+    --lines: #ffffff;    /* Líneas blancas */
+    --ball: #DFFF00;     /* Amarillo flúor pelota */
+    --text-main: #ffffff;
+    --card-bg: rgba(15, 52, 87, 0.85); /* Semitransparente */
+    --danger: #ff4d4d;
 }
 
-body { font-family: 'Montserrat', Arial, Helvetica, sans-serif; margin: 0; padding: 0; background: linear-gradient(180deg,#071028 0%, #0f1724 100%); color:var(--white)}
-.app-wrap { padding: 24px; }
-.container { max-width: 1100px; margin: 20px auto; background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02)); padding: 18px; box-shadow: 0 6px 20px rgba(2,6,23,0.6); border-radius:10px; border: 1px solid rgba(255,255,255,0.04) }
-h1 { margin: 0 0 12px 0; font-weight:700; color:var(--white); letter-spacing:0.4px }
-.subtle { color:var(--muted); font-size:0.95rem }
-#calendar { max-width: 720px; margin: 8px auto; background: transparent; padding: 8px; height:420px }
+body {
+    font-family: 'Montserrat', sans-serif;
+    margin: 0;
+    padding: 0;
+    /* Fondo que simula la moqueta azul */
+    background-color: var(--bg-court);
+    background-image: 
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+    color: var(--text-main);
+}
+
+.app-wrap { padding: 20px; }
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: var(--card-bg);
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border-radius: 12px;
+    border: 2px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(5px);
+}
+
+/* Header & Nav */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid rgba(255,255,255,0.1);
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+}
+
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-logo {
+    width: 50px; height: 50px;
+    background: var(--ball);
+    color: var(--bg-dark);
+    font-weight: 800;
+    font-size: 1.2rem;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--ball);
+}
+.brand-title { font-size: 1.4rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+.subtle { font-size: 0.85rem; opacity: 0.7; font-weight: 400; }
 
 /* Buttons */
-.btn { display:inline-block; background:var(--accent); color:var(--white); border:0; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:600 }
-.btn.secondary { background:transparent; border:1px solid rgba(255,255,255,0.12); color:var(--white) }
-.link { color:var(--accent); text-decoration:none; font-weight:600 }
+.btn {
+    background: var(--ball);
+    color: var(--bg-dark);
+    font-weight: 700;
+    padding: 10px 18px;
+    border-radius: 30px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: inline-block;
+    font-size: 0.9rem;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(223, 255, 0, 0.4); }
+.btn.secondary { background: rgba(255,255,255,0.1); color: white; }
+.btn.danger { background: var(--danger); color: white; }
 
-/* Modal básico */
-.modal { position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(2,6,23,0.6); }
-.modal-content { background-color: var(--card); margin: 6% auto; padding: 20px; border: 1px solid rgba(255,255,255,0.04); width: 92%; max-width: 520px; border-radius:8px; color:var(--white) }
-.modal-close { float: right; font-size: 24px; cursor: pointer }
+/* Forms & Inputs */
+label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; color: #ddd; }
+input, select {
+    width: 100%;
+    padding: 10px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    color: white;
+    margin-bottom: 12px;
+    box-sizing: border-box;
+}
+input:focus, select:focus { outline: 2px solid var(--ball); border-color: transparent; }
 
-.field { margin-bottom:10px }
-.field label{ display:block; font-size:0.9rem; color:var(--muted); margin-bottom:6px }
-.field input[type=text], .field input[type=date], .field select { width:100%; padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.06); background:transparent; color:var(--white) }
+/* Tables */
+.players-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+.players-table th { text-align: left; border-bottom: 2px solid rgba(255,255,255,0.2); padding: 12px; color: var(--ball); }
+.players-table td { border-bottom: 1px solid rgba(255,255,255,0.05); padding: 12px; }
 
-.players-container { max-width: 980px; margin: 20px auto; background: transparent; padding: 20px }
-.players-table { width: 100%; border-collapse: collapse }
-.players-table th, .players-table td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.04); color:var(--white) }
-.players-table thead th { text-align:left; color:var(--muted); font-weight:600 }
-.players-table td .btn { margin-right:6px }
+/* VS Badge for Matchmaking */
+.vs-badge {
+    background: var(--bg-dark);
+    color: var(--ball);
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin: 0 8px;
+}
 
-/* small helpers */
-.topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px }
-.brand { display:flex; align-items:center; gap:10px }
-.brand-logo { width:44px; height:44px; border-radius:8px; background:linear-gradient(45deg,var(--accent), #ff8a50); display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--white) }
-.brand-title { font-size:1.25rem; font-weight:700 }
+/* Modal */
+.modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
+.modal-content {
+    background: var(--bg-dark);
+    margin: 5% auto;
+    padding: 25px;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 12px;
+    border: 1px solid var(--ball);
+    color: white;
+    position: relative;
+}
+.modal-close { position: absolute; right: 20px; top: 15px; font-size: 28px; cursor: pointer; color: var(--ball); }
 
-.error-inline { color:#ffb4a6; background: rgba(255,90,31,0.06); padding:8px; border-radius:6px; margin-bottom:8px }
+.elo-plus { color: #28a745; font-size: 0.85rem; font-weight: bold; margin-left: 6px; }
+.elo-minus { color: #ff4d4d; font-size: 0.85rem; font-weight: bold; margin-left: 6px; }
 
-/* Modal básico */
-.modal { position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
-.modal-content { background-color: #fefefe; margin: 8% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 520px; border-radius:6px }
-.modal-close { float: right; font-size: 24px; cursor: pointer }
-
-.players-container { max-width: 800px; margin: 30px auto; background: #fff; padding: 20px }
-.players-table { width: 100%; border-collapse: collapse }
-.players-table th, .players-table td { padding: 8px; border-bottom: 1px solid #eee }
-.players-table td .btn { margin-right:6px }
+th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s;
+    position: relative;
+}
+th.sortable:hover {
+    color: var(--ball); /* Se ilumina en amarillo al pasar el ratón */
+}
+th.sortable::after {
+    content: '↕';
+    font-size: 0.7rem;
+    margin-left: 5px;
+    opacity: 0.3;
+}
+th.sortable:hover::after {
+    opacity: 1;
+}

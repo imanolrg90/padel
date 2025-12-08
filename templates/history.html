@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Historial - Padel Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/static/css/styles.css">
+  
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+  <style>
+    /* Estilos Tom Select Dark */
+    .ts-control { background-color: rgba(0,0,0,0.3) !important; border: 1px solid rgba(255,255,255,0.2) !important; color: white !important; border-radius: 6px !important; }
+    .ts-dropdown { background-color: var(--bg-dark) !important; border: 1px solid rgba(255,255,255,0.2) !important; color: white !important; }
+    .ts-dropdown .option { color: white !important; }
+    .ts-dropdown .active { background-color: var(--ball) !important; color: var(--bg-dark) !important; }
+    
+    .filter-bar { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 15px; }
+    .filter-group { flex: 1; min-width: 200px; }
+    .filter-group label { display: block; margin-bottom: 5px; font-size: 0.85rem; color: #aaa; }
+    
+    .history-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+    @media (min-width: 768px) { .history-grid { grid-template-columns: 1fr 1fr; } }
+    
+    .match-card { background: rgba(255,255,255,0.03); border-left: 4px solid var(--ball); padding: 15px; border-radius: 6px; cursor: pointer; transition: background 0.2s; position: relative;}
+    .match-card:hover { background: rgba(255,255,255,0.08); }
+    .edit-hint { position: absolute; top: 10px; right: 10px; opacity: 0; transition: opacity 0.2s; color: var(--ball); font-size: 1.2rem; }
+    .match-card:hover .edit-hint { opacity: 1; }
+
+    .desc-box { margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.2); font-size: 0.85rem; color: #ccc; font-style: italic; border-radius: 4px; }
+    .match-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.8rem; color: #aaa; }
+    .score-big { font-size: 1.2rem; font-weight: 800; color: var(--ball); text-align: right; }
+    .winner-row { color: white; font-weight: 700; }
+    .loser-row { color: #888; }
+    .elo-plus { color: #28a745; font-size: 0.8rem; margin-left: 6px; }
+    .elo-minus { color: #ff4d4d; font-size: 0.8rem; margin-left: 6px; }
+
+    /* Estilos del Modal */
+    .score-grid { display: grid; grid-template-columns: auto 1fr 1fr 1fr; gap: 8px; align-items: center; margin-bottom: 15px; }
+    .score-input { width: 100%; text-align: center; padding: 8px; font-weight: bold; font-size: 1.1rem; background: rgba(0,0,0,0.4); border: 1px solid #555; border-radius: 4px; color: white; }
+    .score-label { text-align: center; color: #aaa; font-size: 0.8rem; text-transform: uppercase; }
+    .checkbox-wrapper { margin: 15px 0; display:flex; align-items:center; gap:8px; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <div class="app-wrap">
+    <div class="container">
+      <div class="topbar">
+        <div class="brand"><div class="brand-logo">PM</div><div class="brand-title">HISTORIAL</div></div>
+        <a class="btn secondary" href="/">Volver</a>
+      </div>
+
+      <div class="filter-bar">
+        <div class="filter-group">
+            <label>Liga / Competición</label>
+            <select id="history-filter-league">
+              <option value="">Todas las competiciones</option>
+              <option value="friendly">Solo Amistosos</option>
+              <option disabled>--- Ligas ---</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Jugador</label>
+            <select id="history-filter-player" placeholder="Buscar jugador..."><option value="">Todos los jugadores</option></select>
+        </div>
+        <div>
+            <label style="visibility:hidden">Acción</label>
+            <button id="refresh-btn" class="btn">Filtrar</button>
+        </div>
+      </div>
+
+      <div id="history-list" class="history-grid"></div>
+    </div>
+  </div>
+
+  <div id="event-modal" class="modal">
+    <div class="modal-content">
+      <span id="modal-close" class="modal-close">&times;</span>
+      <h2 id="modal-title">Editar Partido</h2>
+      <form id="event-form">
+        <div id="evt-error" class="error-inline" style="display:none; color:#ff4d4d; margin-bottom:10px;"></div>
+        
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1"><label>Fecha</label><input type="date" id="evt-start" required></div>
+          <div style="flex:1"><label>Liga</label><select id="evt-league"><option value="">-- Amistoso --</option></select></div>
+        </div>
+        <div style="margin-top:10px;">
+            <label>Descripción / Notas</label>
+            <input type="text" id="evt-desc" placeholder="Ej: Pista 3, bolas nuevas...">
+        </div>
+
+        <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:6px; margin:10px 0;">
+          <label style="color:var(--ball)">EQUIPO A</label>
+          <select id="p1" required></select><div style="height:6px"></div>
+          <select id="p2" required></select>
+        </div>
+        <div style="text-align:center; font-weight:bold; color:#aaa;">VS</div>
+        <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:6px; margin-bottom:15px;">
+          <label style="color:var(--ball)">EQUIPO B</label>
+          <select id="p3" required></select><div style="height:6px"></div>
+          <select id="p4" required></select>
+        </div>
+
+        <label class="checkbox-wrapper" id="check-wrapper" style="display:none">
+            <input type="checkbox" id="is-played-check" checked><span>Jugado</span>
+        </label>
+
+        <div id="result-section" style="margin-top:20px; border-top:1px solid #444; padding-top:15px;">
+          <h3 style="margin-top:0; color:var(--ball)">Marcador</h3>
+          <div class="score-grid">
+            <div></div><div class="score-label">SET 1</div><div class="score-label">SET 2</div><div class="score-label">SET 3</div>
+            <div style="font-weight:bold; color:var(--ball); font-size:0.8rem">EQ. A</div>
+            <input type="number" id="s1_a" class="score-input" min="0" max="7">
+            <input type="number" id="s2_a" class="score-input" min="0" max="7">
+            <input type="number" id="s3_a" class="score-input" min="0" max="7">
+            <div style="font-weight:bold; color:var(--ball); font-size:0.8rem">EQ. B</div>
+            <input type="number" id="s1_b" class="score-input" min="0" max="7">
+            <input type="number" id="s2_b" class="score-input" min="0" max="7">
+            <input type="number" id="s3_b" class="score-input" min="0" max="7">
+          </div>
+          <label>Ganador Final</label>
+          <select id="evt-winner" style="margin-bottom:15px;">
+            <option value="1">Gana Equipo A (J1 + J2)</option>
+            <option value="2">Gana Equipo B (J3 + J4)</option>
+          </select>
+        </div>
+
+        <button type="submit" id="btn-save" class="btn" style="width:100%; margin-top:10px;">Guardar Cambios</button>
+        <button type="button" id="btn-delete" class="btn danger" style="width:100%; margin-top:10px;">Eliminar Partido</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const selLeague = document.getElementById('history-filter-league');
+      const selPlayer = document.getElementById('history-filter-player');
+      
+      const modal = document.getElementById('event-modal');
+      const modalClose = document.getElementById('modal-close');
+      let currentEventId = null;
+      let tsInstances = {}; 
+
+      init();
+
+      function init() {
+        // Cargar Ligas
+        fetch('/api/leagues').then(r=>r.json()).then(data => {
+            const modalSelect = document.getElementById('evt-league');
+            data.forEach(l => {
+                const label = l.description ? `${l.name} (${l.description})` : l.name;
+                selLeague.innerHTML += `<option value="${l.id}">${label}</option>`;
+                modalSelect.innerHTML += `<option value="${l.id}">${label}</option>`;
+            });
+        });
+
+        // Cargar Jugadores
+        fetch('/api/players').then(r=>r.json()).then(data => {
+            data.forEach(p => selPlayer.innerHTML += `<option value="${p.id}">${p.first_name} ${p.last_name || ''}</option>`);
+            new TomSelect('#history-filter-player', { create: false, sortField: { field: "text", direction: "asc" } });
+
+            ['p1','p2','p3','p4'].forEach(id => {
+                const el = document.getElementById(id);
+                el.innerHTML = '<option value="">Buscar jugador...</option>';
+                data.forEach(p => el.innerHTML+=`<option value="${p.id}">${p.first_name} ${p.last_name||''}</option>`);
+                tsInstances[id] = new TomSelect(`#${id}`, { create: false, sortField: { field: "text", direction: "asc" }, maxOptions: 50 });
+            });
+            loadHistory();
+        });
+      }
+
+      document.getElementById('refresh-btn').addEventListener('click', loadHistory);
+      selLeague.addEventListener('change', loadHistory);
+
+      function loadHistory() {
+        const leagueVal = selLeague.value;
+        const playerVal = selPlayer.value;
+        const container = document.getElementById('history-list');
+        container.innerHTML = '<div style="text-align:center; padding:30px; grid-column:1/-1; color:#aaa">Cargando...</div>';
+
+        let url = '/api/matches/history';
+        const params = [];
+        if(leagueVal) params.push(`league_id=${leagueVal}`);
+        if(playerVal) params.push(`player_id=${playerVal}`);
+        if(params.length > 0) url += '?' + params.join('&');
+
+        fetch(url).then(r=>r.json()).then(matches => {
+          container.innerHTML = '';
+          if(matches.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:30px; grid-column:1/-1; color:#aaa">No se encontraron partidos.</div>';
+            return;
+          }
+
+          matches.forEach(m => {
+            const p1c = (m.winner==1) ? 'winner-row' : 'loser-row';
+            const p2c = (m.winner==2) ? 'winner-row' : 'loser-row';
+            let eloA = '', eloB = '';
+            if(m.elo_diff) {
+                const diff = m.elo_diff;
+                if(m.winner == 1) { eloA = `<span class="elo-plus">(+${diff})</span>`; eloB = `<span class="elo-minus">(-${diff})</span>`; }
+                else { eloA = `<span class="elo-minus">(-${diff})</span>`; eloB = `<span class="elo-plus">(+${diff})</span>`; }
+            }
+            let descHtml = m.description ? `<div class="desc-box">📝 "${m.description}"</div>` : '';
+            
+            const div = document.createElement('div');
+            div.className = 'match-card';
+            div.onclick = () => openModal(m);
+
+            div.innerHTML = `<div class="edit-hint">✎</div><div class="match-header"><span>📅 ${m.start}</span><span class="vs-badge">${m.league_name || 'Amistoso'}</span></div><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px"><div class="${p1c}">${m.p1_name} / ${m.p2_name} ${eloA}</div></div><div style="display:flex; justify-content:space-between; align-items:center"><div class="${p2c}">${m.p3_name} / ${m.p4_name} ${eloB}</div><div class="score-big">${m.score_str}</div></div>${descHtml}`;
+            container.appendChild(div);
+          });
+        });
+      }
+
+      window.openModal = function(m) {
+          currentEventId = m.id;
+          document.getElementById('evt-start').value = m.start;
+          document.getElementById('evt-league').value = m.league_id || "";
+          document.getElementById('evt-desc').value = m.description || "";
+          
+          if(tsInstances['p1']) tsInstances['p1'].setValue(m.p1);
+          if(tsInstances['p2']) tsInstances['p2'].setValue(m.p2);
+          if(tsInstances['p3']) tsInstances['p3'].setValue(m.p3);
+          if(tsInstances['p4']) tsInstances['p4'].setValue(m.p4);
+
+          document.getElementById('s1_a').value = m.s1_a||''; document.getElementById('s1_b').value = m.s1_b||'';
+          document.getElementById('s2_a').value = m.s2_a||''; document.getElementById('s2_b').value = m.s2_b||'';
+          document.getElementById('s3_a').value = m.s3_a||''; document.getElementById('s3_b').value = m.s3_b||'';
+          document.getElementById('evt-winner').value = m.winner || '1';
+          
+          modal.style.display = 'block';
+      }
+
+      modalClose.onclick = () => modal.style.display = 'none';
+      window.onclick = (e) => { if(e.target==modal) modal.style.display='none'; };
+
+      document.getElementById('event-form').onsubmit = (e) => {
+        e.preventDefault();
+        const payload = {
+            start: document.getElementById('evt-start').value,
+            league_id: document.getElementById('evt-league').value,
+            description: document.getElementById('evt-desc').value,
+            p1: document.getElementById('p1').value, p2: document.getElementById('p2').value,
+            p3: document.getElementById('p3').value, p4: document.getElementById('p4').value,
+            played: true,
+            winner: document.getElementById('evt-winner').value,
+            s1_a: document.getElementById('s1_a').value, s1_b: document.getElementById('s1_b').value,
+            s2_a: document.getElementById('s2_a').value, s2_b: document.getElementById('s2_b').value,
+            s3_a: document.getElementById('s3_a').value, s3_b: document.getElementById('s3_b').value
+        };
+
+        fetch(`/api/events/${currentEventId}`, {method:'PUT', body:JSON.stringify(payload), headers:{'Content-Type':'application/json'}})
+        .then(() => fetch(`/api/events/${currentEventId}/result`, {method:'POST', body:JSON.stringify(payload), headers:{'Content-Type':'application/json'}}))
+        .then(r => r.json())
+        .then(d => { if(d.error) alert(d.error); else { modal.style.display='none'; loadHistory(); } });
+      };
+
+      document.getElementById('btn-delete').onclick = () => {
+          if(confirm('¿Eliminar este partido del historial?')) {
+              fetch(`/api/events/${currentEventId}`, {method:'DELETE'})
+              .then(() => { modal.style.display='none'; loadHistory(); });
+          }
+      };
+    });
+  </script>
+</body>
+</html>

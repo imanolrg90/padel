@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Ligas - Padel Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/static/css/styles.css">
+  
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+  
+  <style>
+      /* Estilos Tom Select */
+      .ts-control { background-color: rgba(0,0,0,0.3) !important; border: 1px solid rgba(255,255,255,0.2) !important; color: white !important; }
+      .ts-dropdown { background-color: var(--bg-dark) !important; color: white !important; }
+      .ts-dropdown .option { color: white !important; }
+      .ts-dropdown .active { background-color: var(--ball) !important; color: var(--bg-dark) !important; }
+      
+      .registered-list { max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; margin-top: 10px; }
+      .reg-item { display: flex; justify-content: space-between; align-items: center; padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+      
+      .btn-magic {
+          background-color: var(--ball);
+          color: var(--bg-dark);
+          font-weight: 800;
+          text-transform: uppercase;
+          font-size: 0.75rem;
+          border: none;
+          border-radius: 4px;
+          padding: 6px 12px;
+          display: inline-flex; align-items: center; gap: 6px;
+          transition: all 0.3s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      }
+      .btn-magic:hover { background-color: white; transform: translateY(-2px); box-shadow: 0 0 15px rgba(223, 255, 0, 0.6); cursor: pointer; }
+      .actions-cell { display: flex; gap: 8px; align-items: center; }
+      
+      .btn-edit { background: #3b82f6; color: white; border:0; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <div class="app-wrap">
+    <div class="container">
+      <div class="topbar">
+        <div class="brand"><div class="brand-logo">PM</div><div class="brand-title">LIGAS</div></div>
+        <a class="btn secondary" href="/">Volver</a>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2); padding:15px; border-radius:8px; margin-bottom:20px;">
+        <h3>Crear Nueva Liga</h3>
+        <form id="league-form" style="display:flex; gap:10px; align-items:flex-end;">
+          <div style="flex:1"><label>Nombre de la Liga</label><input id="league-name" required></div>
+          <div style="flex:2"><label>Descripción</label><input id="league-desc"></div>
+          <button type="submit" class="btn">Crear Liga</button>
+        </form>
+      </div>
+
+      <table class="players-table">
+        <thead><tr><th>ID</th><th>Liga</th><th>Descripción</th><th>Acciones</th></tr></thead>
+        <tbody id="leagues-list"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="enroll-modal" class="modal" style="display:none">
+      <div class="modal-content">
+          <span class="modal-close" onclick="closeEnrollModal()">&times;</span>
+          <h2 id="enroll-title">Inscripciones</h2>
+          <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:6px; margin-bottom:15px;">
+              <h4 style="margin:0 0 10px 0; color:var(--ball)">Inscribir Pareja</h4>
+              <div style="display:flex; gap:10px; margin-bottom:10px;">
+                  <select id="p1-select" placeholder="Jugador 1..."></select>
+                  <select id="p2-select" placeholder="Jugador 2..."></select>
+              </div>
+              <button class="btn" style="width:100%" onclick="addPairToLeague()">Crear e Inscribir</button>
+          </div>
+          <h3>Parejas Inscritas</h3>
+          <div id="enrolled-list" class="registered-list"></div>
+      </div>
+  </div>
+
+  <div id="edit-league-modal" class="modal" style="display:none">
+      <div class="modal-content">
+          <span class="modal-close" onclick="document.getElementById('edit-league-modal').style.display='none'">&times;</span>
+          <h2>Editar Liga</h2>
+          <form id="edit-league-form">
+              <input type="hidden" id="edit-lid">
+              <label>Nombre</label>
+              <input id="edit-lname" required>
+              <label>Descripción</label>
+              <input id="edit-ldesc">
+              <button type="submit" class="btn" style="width:100%; margin-top:10px">Guardar Cambios</button>
+          </form>
+      </div>
+  </div>
+
+  <script>
+    let currentLeagueId = null;
+    let tsP1, tsP2;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadLeagues();
+        loadAllPlayers();
+    });
+
+    function loadLeagues() {
+      fetch('/api/leagues').then(r=>r.json()).then(data => {
+        const tb = document.getElementById('leagues-list');
+        tb.innerHTML = '';
+        data.forEach(l => {
+          // Escapamos comillas para evitar errores en el onclick
+          const safeName = l.name.replace(/'/g, "\\'");
+          const safeDesc = (l.description || '').replace(/'/g, "\\'");
+            
+          tb.innerHTML += `<tr>
+              <td>${l.id}</td>
+              <td style="font-weight:bold; color:var(--ball)">${l.name}</td>
+              <td>${l.description || '-'}</td>
+              <td class="actions-cell">
+                  <button class="btn-edit" onclick="openEditLeague(${l.id}, '${safeName}', '${safeDesc}')">✎</button>
+                  <button class="btn secondary" style="padding:4px 8px; font-size:0.8rem" onclick="openEnroll(${l.id}, '${safeName}')">Parejas</button>
+                  <button class="btn-magic" onclick="generateCalendar(${l.id})"><span>⚡</span> Generar</button>
+                  <button onclick="delLeague(${l.id})" class="btn danger" style="padding:4px 8px; font-size:0.8rem">X</button>
+              </td>
+          </tr>`;
+        });
+      });
+    }
+
+    // --- EDICIÓN DE LIGA ---
+    window.openEditLeague = function(id, name, desc) {
+        document.getElementById('edit-lid').value = id;
+        document.getElementById('edit-lname').value = name;
+        document.getElementById('edit-ldesc').value = desc;
+        document.getElementById('edit-league-modal').style.display = 'block';
+    }
+
+    document.getElementById('edit-league-form').onsubmit = (e) => {
+        e.preventDefault();
+        const id = document.getElementById('edit-lid').value;
+        const name = document.getElementById('edit-lname').value;
+        const desc = document.getElementById('edit-ldesc').value;
+
+        fetch(`/api/leagues/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({name, description: desc}),
+            headers: {'Content-Type':'application/json'}
+        }).then(() => {
+            document.getElementById('edit-league-modal').style.display = 'none';
+            loadLeagues();
+        });
+    }
+
+    // --- RESTO DE FUNCIONES (Generar, Inscribir, Borrar...) ---
+    window.generateCalendar = function(lid) {
+        if(!confirm('¿Generar automáticamente todos los cruces (Round Robin) para esta liga?')) return;
+        fetch(`/api/leagues/${lid}/generate`, {method: 'POST'})
+        .then(async r => {
+            const resp = await r.json();
+            if(r.ok) alert(`✅ Calendario generado. Se han creado ${resp.count} partidos nuevos.`);
+            else alert(`❌ Error: ${resp.error}`);
+        })
+        .catch(err => alert('Error de conexión'));
+    }
+
+    function loadAllPlayers() {
+        fetch('/api/players').then(r=>r.json()).then(data => {
+            const opts = data.map(p => `<option value="${p.id}">${p.first_name} ${p.last_name||''}</option>`).join('');
+            document.getElementById('p1-select').innerHTML = '<option value="">Jugador 1</option>' + opts;
+            document.getElementById('p2-select').innerHTML = '<option value="">Jugador 2</option>' + opts;
+            tsP1 = new TomSelect('#p1-select', {create:false});
+            tsP2 = new TomSelect('#p2-select', {create:false});
+        });
+    }
+
+    window.openEnroll = function(lid, name) {
+        currentLeagueId = lid;
+        document.getElementById('enroll-title').innerText = `Inscripciones: ${name}`;
+        document.getElementById('enroll-modal').style.display = 'block';
+        loadEnrolledPairs();
+    }
+    window.closeEnrollModal = function() { document.getElementById('enroll-modal').style.display = 'none'; }
+
+    function loadEnrolledPairs() {
+        const list = document.getElementById('enrolled-list');
+        list.innerHTML = 'Cargando...';
+        fetch(`/api/leagues/${currentLeagueId}/pairs`).then(r=>r.json()).then(data => {
+            list.innerHTML = '';
+            if(!data.length) { list.innerHTML = '<div style="color:#aaa; font-style:italic">Sin parejas inscritas.</div>'; return; }
+            data.forEach(p => {
+                list.innerHTML += `<div class="reg-item"><span style="font-weight:600">${p.name}</span><button class="btn danger" style="padding:2px 6px; font-size:0.7rem" onclick="removePair(${p.id})">Quitar</button></div>`;
+            });
+        });
+    }
+
+    window.addPairToLeague = function() {
+        const p1 = document.getElementById('p1-select').value;
+        const p2 = document.getElementById('p2-select').value;
+        if(!p1 || !p2 || p1==p2) { alert('Selecciona 2 jugadores distintos'); return; }
+        
+        fetch('/api/pairs', {method:'POST', body:JSON.stringify({p1, p2}), headers:{'Content-Type':'application/json'}})
+        .then(r=>r.json()).then(pair => {
+            fetch(`/api/leagues/${currentLeagueId}/pairs`, {method:'POST', body:JSON.stringify({pair_id: pair.id}), headers:{'Content-Type':'application/json'}})
+            .then(r => {
+                if(r.ok) { tsP1.clear(); tsP2.clear(); loadEnrolledPairs(); }
+                else alert('Pareja ya inscrita');
+            });
+        });
+    }
+
+    window.removePair = function(pid) {
+        if(confirm('¿Quitar pareja?')) fetch(`/api/leagues/${currentLeagueId}/pairs/${pid}`, {method:'DELETE'}).then(loadEnrolledPairs);
+    }
+
+    document.getElementById('league-form').onsubmit = (e) => {
+      e.preventDefault();
+      fetch('/api/leagues', {method:'POST', body: JSON.stringify({name: document.getElementById('league-name').value, description: document.getElementById('league-desc').value}), headers: {'Content-Type':'application/json'}})
+      .then(() => { document.getElementById('league-form').reset(); loadLeagues(); });
+    };
+    
+    window.delLeague = (id) => { if(confirm('¿Borrar liga?')) fetch(`/api/leagues/${id}`, {method:'DELETE'}).then(loadLeagues); };
+  </script>
+</body>
+</html>

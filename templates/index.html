@@ -1,108 +1,132 @@
 <!doctype html>
 <html lang="es">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Calendario - PADEL</title>
-    <!-- FullCalendar: usar archivos locales descargados en static/vendor/fullcalendar -->
-    <link href="/static/vendor/fullcalendar/main.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="/static/css/styles.css">
-  </head>
-  <body>
-    <div class="app-wrap">
-      <div class="container">
-        <div class="topbar">
-          <div class="brand">
-            <div class="brand-logo">PD</div>
-            <div>
-              <div class="brand-title">PADEL Manager</div>
-              <div class="subtle">Calendario de partidos y estadísticas</div>
-            </div>
+<head>
+  <meta charset="utf-8">
+  <title>Padel Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+  <style>
+    /* Estilos Tom Select y CSS general */
+    .ts-control { background-color: rgba(0,0,0,0.3) !important; border: 1px solid rgba(255,255,255,0.2) !important; color: white !important; }
+    .ts-dropdown { background-color: var(--bg-dark) !important; color: white !important; }
+    .ts-dropdown .option { color: white !important; }
+    .ts-dropdown .active { background-color: var(--ball) !important; color: var(--bg-dark) !important; }
+    .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 24px; margin-top: 20px; }
+    @media (min-width: 900px) { .dashboard-grid { grid-template-columns: 2fr 1fr; } }
+    .table-compact th, .table-compact td { padding: 8px 4px; text-align: center; font-size: 0.9rem; }
+    .table-compact td:nth-child(2) { text-align: left; }
+    .stat-head { color: var(--ball); font-size: 0.75rem; text-transform: uppercase; }
+    .elo-badge { background: var(--ball); color: var(--bg-dark); padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 0.85rem; }
+    .match-card { background: rgba(255,255,255,0.03); border-left: 4px solid var(--ball); padding: 12px; margin-bottom: 12px; border-radius: 4px; cursor:pointer; }
+    .pending-card { border-left-color: #ff4d4d; }
+    .match-date { font-size: 0.75rem; color: #aaa; display:flex; justify-content:space-between; margin-bottom:4px;}
+    .match-score { font-weight: 800; color: var(--ball); font-size: 1.1rem; text-align: right; margin-top: 6px;}
+    .team-row { display: flex; justify-content: space-between; font-size: 0.9rem; }
+    .winner-text { color: white; font-weight: 700; }
+    .loser-text { color: #888; }
+    .score-grid { display: grid; grid-template-columns: auto 1fr 1fr 1fr; gap: 8px; align-items: center; margin-bottom: 15px; }
+    .score-input { width: 100%; text-align: center; padding: 8px; font-weight: bold; background: rgba(0,0,0,0.4); border: 1px solid #555; border-radius: 4px; color: white; }
+    .score-label { text-align: center; color: #aaa; font-size: 0.8rem; text-transform: uppercase; }
+    .elo-plus { color: #28a745; font-size: 0.85rem; font-weight: bold; margin-left: 6px; }
+    .elo-minus { color: #ff4d4d; font-size: 0.85rem; font-weight: bold; margin-left: 6px; }
+    .checkbox-wrapper { margin: 15px 0; display:flex; align-items:center; gap:8px; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <div class="app-wrap">
+    <div class="container">
+      <div class="topbar">
+        <div class="brand"><div class="brand-logo">PM</div><div><div class="brand-title">Padel Manager</div><div class="subtle">Pro Edition</div></div></div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn" onclick="openModal()">+ Registrar Partido</button>
+          <a class="btn secondary" href="/history">Historial</a>
+          <a class="btn secondary" href="/leagues">Ligas</a>
+          <a class="btn secondary" href="/players">Jugadores</a>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <div>
+          <h2 style="margin-top:0; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">🏆 Clasificación ELO</h2>
+          <div style="margin-bottom:15px; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
+            <select id="main-league-select" style="width:100%; background:var(--bg-dark); color:white; border:1px solid var(--ball); padding:10px;"><option value="">-- Clasificación Global --</option></select>
           </div>
-          <div>
-            <button id="new-event-btn" class="btn" onclick="openCreateEvent()">Registrar evento</button>
-            <a class="btn" href="/players">Jugadores</a>
-            <a class="btn secondary" href="/stats">Estadísticas</a>
+          <div class="card" style="padding:0; overflow-x:auto;">
+            <table class="players-table table-compact" style="margin:0;">
+              <thead style="background:rgba(0,0,0,0.3)"><tr><th>#</th><th style="min-width:120px">Jugador</th><th style="color:#fff; font-weight:bold">ELO</th><th class="stat-head">PJ</th><th class="stat-head">V</th><th class="stat-head">SG</th><th class="stat-head">SP</th><th class="stat-head">% V</th></tr></thead>
+              <tbody id="league-ranking-body"></tbody>
+            </table>
           </div>
         </div>
-
-        <div class="dashboard" style="display:flex; gap:18px; align-items:flex-start;">
-          <div class="dash-left" style="width:320px;">
-            <div class="card" style="padding:12px; border-radius:8px; background:rgba(255,255,255,0.02);">
-              <h3 style="margin:0 0 8px 0">Top jugadores</h3>
-              <ul id="mini-list" style="list-style:none; padding:0; margin:0 0 8px 0; color:var(--white)"></ul>
-              <canvas id="mini-chart" style="width:100%; height:160px"></canvas>
-            </div>
-          </div>
-          <div class="dash-right" style="flex:1;">
-            <div id="calendar"></div>
-          </div>
+        <div>
+          <h2 style="margin-top:0; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; color:#ff4d4d">⏳ Pendientes</h2>
+          <div id="pending-list" style="margin-bottom:30px"></div>
+          <h2 style="margin-top:0; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">📅 Resultados</h2>
+          <div id="agenda-list"></div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Modal simple para crear/editar eventos -->
-    <div id="event-modal" class="modal" style="display:none;">
-      <div class="modal-content">
-        <span id="modal-close" class="modal-close">&times;</span>
-        <h2 id="modal-title">Evento</h2>
-        <form id="event-form">
-          <div id="evt-error" style="color:#b00020; margin-bottom:8px; display:none;"></div>
-          <label>Título<br><input type="text" id="evt-title" required></label><br>
-          <label>Fecha inicio<br><input type="date" id="evt-start" required></label><br>
-          <label>Jugador 1 (Pareja A)<br><select id="p1"></select></label><br>
-          <label>Jugador 2 (Pareja A)<br><select id="p2"></select></label><br>
-          <label>Jugador 3 (Pareja B)<br><select id="p3"></select></label><br>
-          <label>Jugador 4 (Pareja B)<br><select id="p4"></select></label><br>
-          <div style="margin-top:8px">
-            <button type="submit" id="save-btn">Guardar</button>
-            <button type="button" id="delete-btn" style="margin-left:8px; display:none;">Eliminar</button>
-          </div>
-        </form>
-
-        <div id="result-section" style="margin-top:12px; display:none;">
-          <h3>Registrar resultado</h3>
-          <label>Marcador (ej: 6-3 4-6 6-4)<br><input type="text" id="evt-score"></label><br>
-          <label>Ganador<br>
-            <select id="evt-winner">
-              <option value="1">Pareja A (p1+p2)</option>
-              <option value="2">Pareja B (p3+p4)</option>
-            </select>
-          </label><br>
-          <button id="save-result-btn">Guardar resultado</button>
+  <div id="event-modal" class="modal">
+    <div class="modal-content">
+      <span id="modal-close" class="modal-close">&times;</span>
+      <h2 id="modal-title">Partido</h2>
+      <form id="event-form">
+        <div id="evt-error" class="error-inline" style="display:none; color:#ff4d4d; margin-bottom:10px;"></div>
+        
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1"><label>Fecha</label><input type="date" id="evt-start" required></div>
+          <div style="flex:1"><label>Liga</label><select id="evt-league"><option value="">-- Amistoso (Individual) --</option></select></div>
         </div>
-      </div>
-    </div>
+        <div style="margin-top:10px;"><label>Descripción</label><input type="text" id="evt-desc" placeholder="Notas..."></div>
 
-    <!-- FullCalendar JS local -->
-    <script src="/static/vendor/fullcalendar/index.global.min.js"></script>
-    <!-- Chart.js local (para dashboard/estadísticas) -->
-    <script src="/static/vendor/chartjs/chart.umd.min.js"></script>
-    <script>
-      // Fallback dinámico: si los archivos locales no existen (404), cargar desde CDN
-      (function(){
-        function loadCss(href){
-          var l = document.createElement('link'); l.rel='stylesheet'; l.href=href; document.head.appendChild(l);
-        }
-        function loadScript(src){
-          var s=document.createElement('script'); s.src=src; document.head.appendChild(s);
-        }
-        // Si FullCalendar no está definido tras intentar cargar el local, inyectar CDN
-        setTimeout(function(){
-          if (typeof FullCalendar === 'undefined') {
-            console.warn('[PADEL] FullCalendar local no encontrado, cargando desde CDN')
-            loadCss('https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css')
-            loadScript('https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js')
-          }
-          if (typeof Chart === 'undefined') {
-            console.warn('[PADEL] Chart.js local no encontrado, cargando desde CDN')
-            loadScript('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js')
-          }
-        }, 200);
-      })();
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="/static/js/main.js"></script>
-    <script src="/static/js/dashboard.js"></script>
-  </body>
+        <div id="mode-individual">
+            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:6px; margin:10px 0;">
+              <label style="color:var(--ball)">EQUIPO A</label>
+              <select id="p1" placeholder="J1..."></select><div style="height:5px"></div><select id="p2" placeholder="J2..."></select>
+            </div>
+            <div style="text-align:center; font-weight:bold; color:#aaa;">VS</div>
+            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:6px; margin-bottom:15px;">
+              <label style="color:var(--ball)">EQUIPO B</label>
+              <select id="p3" placeholder="J3..."></select><div style="height:5px"></div><select id="p4" placeholder="J4..."></select>
+            </div>
+        </div>
+
+        <div id="mode-pairs" style="display:none">
+            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:6px; margin:10px 0;">
+              <label style="color:var(--ball)">PAREJA A</label>
+              <select id="pair-a" placeholder="Seleccionar Pareja..."></select>
+            </div>
+            <div style="text-align:center; font-weight:bold; color:#aaa;">VS</div>
+            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:6px; margin-bottom:15px;">
+              <label style="color:var(--ball)">PAREJA B</label>
+              <select id="pair-b" placeholder="Seleccionar Pareja..."></select>
+            </div>
+        </div>
+
+        <label class="checkbox-wrapper" id="check-wrapper">
+            <input type="checkbox" id="is-played-check">
+            <span style="font-weight:bold; color:var(--ball)">¿Ya jugado?</span>
+        </label>
+
+        <div id="result-section" style="margin-top:20px; border-top:1px solid #444; padding-top:15px; display:none;">
+          <h3 style="margin-top:0; color:var(--ball)">Marcador</h3>
+          <div class="score-grid">
+            <div></div><div>S1</div><div>S2</div><div>S3</div>
+            <div>EQ.A</div><input type="number" id="s1_a" class="score-input" max="7"><input type="number" id="s2_a" class="score-input" max="7"><input type="number" id="s3_a" class="score-input" max="7">
+            <div>EQ.B</div><input type="number" id="s1_b" class="score-input" max="7"><input type="number" id="s2_b" class="score-input" max="7"><input type="number" id="s3_b" class="score-input" max="7">
+          </div>
+          <label>Ganador</label><select id="evt-winner" style="margin-bottom:15px;"><option value="1">Pareja A</option><option value="2">Pareja B</option></select>
+        </div>
+
+        <button type="submit" id="btn-save" class="btn" style="width:100%; margin-top:10px;">Guardar</button>
+        <button type="button" id="btn-delete" class="btn danger" style="width:100%; margin-top:10px; display:none;">Borrar</button>
+      </form>
+    </div>
+  </div>
+  <script src="/static/js/main.js"></script>
+</body>
 </html>
