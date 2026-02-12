@@ -1,141 +1,131 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <title>Jugadores - Padel Manager</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="/static/css/styles.css">
-  <style>
-      .sort-controls { margin-bottom: 15px; display:flex; gap:10px; align-items:center; }
-      .sort-label { font-size: 0.9rem; color: #aaa; }
-      .edit-btn { background: #3b82f6; color:white; padding:4px 8px; font-size:0.8rem; border-radius:4px; border:0; cursor:pointer; margin-right:5px;}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jugadores - Padel Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}" type="image/svg+xml">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root { --bg: #f8fafc; --surface: #ffffff; --text: #1e293b; --border: #e2e8f0; --accent: #d4f135; --danger: #ef4444; }
+        body { font-family:'Inter', sans-serif; background:var(--bg); color:var(--text); margin:0; padding:20px; }
+        .container { max-width:800px; margin:0 auto; }
+        
+        .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:var(--surface); padding:15px; border-radius:12px; border:1px solid var(--border); }
+        .btn-back { text-decoration:none; color:var(--text); font-weight:600; display:flex; align-items:center; gap:5px; }
+        
+        .card { background:var(--surface); border-radius:12px; border:1px solid var(--border); overflow:hidden; box-shadow:0 2px 4px rgba(0,0,0,0.05); }
+        
+        table { width:100%; border-collapse:collapse; }
+        th { text-align:left; background:#f1f5f9; padding:12px 15px; font-size:0.75rem; color:#64748b; text-transform:uppercase; }
+        td { padding:12px 15px; border-bottom:1px solid var(--border); font-size:0.9rem; }
+        tr:last-child td { border-bottom:none; }
+        
+        .btn-icon { background:none; border:none; cursor:pointer; font-size:1rem; padding:5px; border-radius:4px; transition:0.2s; }
+        .btn-edit { color:#3b82f6; } .btn-edit:hover { background:#eff6ff; }
+        .btn-del { color:var(--danger); } .btn-del:hover { background:#fef2f2; }
+        
+        .elo-badge { background:#0f172a; color:var(--accent); padding:2px 8px; border-radius:4px; font-weight:700; font-size:0.8rem; }
+
+        /* Modal */
+        .modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; backdrop-filter:blur(2px); }
+        .modal { background:white; padding:25px; border-radius:16px; width:90%; max-width:350px; box-shadow:0 10px 25px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom:15px; }
+        label { display:block; font-size:0.8rem; font-weight:600; margin-bottom:5px; color:#64748b; }
+        input { width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; box-sizing:border-box; font-family:inherit; }
+        .btn-save { width:100%; background:#0f172a; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; margin-top:10px; }
+    </style>
 </head>
 <body>
-  <div class="app-wrap">
     <div class="container">
-      <div class="topbar">
-        <div class="brand">
-          <div class="brand-logo">PM</div>
-          <div class="brand-title">JUGADORES</div>
+        <div class="header">
+            <h2 style="margin:0">👤 Gestión Jugadores</h2>
+            <a href="/" class="btn-back"><i class="fas fa-arrow-left"></i> Volver</a>
         </div>
-        <a class="btn secondary" href="/">Volver</a>
-      </div>
-
-      <div style="background:rgba(0,0,0,0.2); padding:15px; border-radius:8px; margin-bottom:20px;">
-        <h3>Nuevo Jugador</h3>
-        <form id="player-form" style="display:flex; gap:10px; align-items:end; flex-wrap:wrap">
-          <div style="flex:1; min-width:150px"><label>Nombre</label><input id="first_name" required></div>
-          <div style="flex:1; min-width:150px"><label>Apellido</label><input id="last_name"></div>
-          <button class="btn" type="submit">Agregar</button>
-        </form>
-      </div>
-      
-      <div class="sort-controls">
-          <span class="sort-label">Ordenar por:</span>
-          <button class="btn secondary" onclick="sortPlayers('name')">Nombre (A-Z)</button>
-          <button class="btn secondary" onclick="sortPlayers('id')">ID (Recientes)</button>
-      </div>
-
-      <table class="players-table" id="players-table">
-        <thead><tr><th>ID</th><th>Nombre</th><th>Apellido</th><th>ELO</th><th>Acciones</th></tr></thead>
-        <tbody id="players-body"></tbody>
-      </table>
+        
+        <div class="card">
+            <table>
+                <thead><tr><th>ID</th><th>Nombre</th><th>ELO Actual</th><th style="text-align:right">Acciones</th></tr></thead>
+                <tbody id="p-list"></tbody>
+            </table>
+        </div>
     </div>
-  </div>
 
-  <div id="edit-modal" class="modal" style="display:none">
-      <div class="modal-content">
-          <span class="modal-close" onclick="closeEditModal()">&times;</span>
-          <h2>Editar Jugador</h2>
-          <form id="edit-form">
-              <input type="hidden" id="edit-id">
-              <label>Nombre</label><input id="edit-first" required>
-              <label>Apellido</label><input id="edit-last">
-              <label>ELO</label><input type="number" id="edit-elo" required>
-              <button type="submit" class="btn" style="width:100%; margin-top:10px">Guardar Cambios</button>
-          </form>
-      </div>
-  </div>
+    <div id="modal" class="modal-overlay">
+        <div class="modal">
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                <h3 style="margin:0">Editar Jugador</h3>
+                <span onclick="closeModal()" style="cursor:pointer; font-size:1.2rem">&times;</span>
+            </div>
+            <input type="hidden" id="pid">
+            
+            <div class="form-group">
+                <label>Nombre Completo</label>
+                <input type="text" id="pname">
+            </div>
+            
+            <div class="form-group">
+                <label>Puntos ELO (Manual)</label>
+                <input type="number" id="pelo">
+                <small style="color:#ef4444; font-size:0.7rem;">* Cambiar esto afecta al ranking directamente.</small>
+            </div>
 
-  <script>
-    let playersCache = [];
+            <button class="btn-save" onclick="savePlayer()">Guardar Cambios</button>
+        </div>
+    </div>
 
-    document.addEventListener('DOMContentLoaded', loadPlayers);
-
-    function loadPlayers() {
-      fetch('/api/players').then(r=>r.json()).then(data => {
-        playersCache = data;
-        renderTable(playersCache);
-      });
-    }
-
-    function renderTable(data) {
-        const tbody = document.getElementById('players-body');
-        tbody.innerHTML = '';
-        data.forEach(p => {
-            tbody.innerHTML += `
+    <script>
+        async function load() {
+            const r = await fetch('/api/players');
+            const d = await r.json();
+            document.getElementById('p-list').innerHTML = d.map(p => `
                 <tr>
-                    <td>${p.id}</td>
-                    <td>${p.first_name}</td>
-                    <td>${p.last_name || ''}</td>
-                    <td><span style="color:var(--ball); font-weight:bold">${p.elo}</span></td>
-                    <td>
-                        <button class="edit-btn" onclick='openEdit(${JSON.stringify(p)})'>Editar</button>
-                        <button class="btn danger" style="padding:4px 8px; font-size:0.8rem" onclick="delPlayer(${p.id})">X</button>
+                    <td><span style="color:#94a3b8">#${p.id}</span></td>
+                    <td style="font-weight:600">${p.name}</td>
+                    <td><span class="elo-badge">${p.elo}</span></td>
+                    <td style="text-align:right">
+                        <button class="btn-icon btn-edit" onclick='openEdit(${JSON.stringify(p)})' title="Editar"><i class="fas fa-pen"></i></button>
+                        <button class="btn-icon btn-del" onclick="del(${p.id})" title="Eliminar"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>
-            `;
-        });
-    }
-
-    // Ordenar
-    window.sortPlayers = function(criteria) {
-        let sorted = [...playersCache];
-        if(criteria === 'name') {
-            sorted.sort((a,b) => a.first_name.localeCompare(b.first_name));
-        } else if(criteria === 'id') {
-            sorted.sort((a,b) => b.id - a.id);
+            `).join('');
         }
-        renderTable(sorted);
-    }
 
-    // Crear
-    document.getElementById('player-form').onsubmit = (e) => {
-        e.preventDefault();
-        const first = document.getElementById('first_name').value;
-        const last = document.getElementById('last_name').value;
-        fetch('/api/players', { method:'POST', body:JSON.stringify({first_name:first, last_name:last}), headers:{'Content-Type':'application/json'} })
-        .then(() => { document.getElementById('player-form').reset(); loadPlayers(); });
-    };
+        function openEdit(p) {
+            document.getElementById('pid').value = p.id;
+            document.getElementById('pname').value = p.name;
+            document.getElementById('pelo').value = p.elo;
+            document.getElementById('modal').style.display = 'flex';
+        }
+        function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
-    // Borrar
-    window.delPlayer = (id) => {
-        if(confirm('¿Borrar jugador?')) fetch(`/api/players/${id}`, {method:'DELETE'}).then(loadPlayers);
-    };
+        async function savePlayer() {
+            const data = {
+                id: document.getElementById('pid').value,
+                name: document.getElementById('pname').value,
+                elo: document.getElementById('pelo').value
+            };
+            const r = await fetch('/api/players', {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+            if((await r.json()).ok) {
+                Swal.fire({toast:true, position:'top-end', icon:'success', title:'Guardado', timer:1500, showConfirmButton:false});
+                closeModal(); load();
+            }
+        }
 
-    // Editar
-    const editModal = document.getElementById('edit-modal');
-    window.openEdit = function(p) {
-        document.getElementById('edit-id').value = p.id;
-        document.getElementById('edit-first').value = p.first_name;
-        document.getElementById('edit-last').value = p.last_name || '';
-        document.getElementById('edit-elo').value = p.elo;
-        editModal.style.display = 'block';
-    }
-    window.closeEditModal = function() { editModal.style.display = 'none'; }
-    
-    document.getElementById('edit-form').onsubmit = (e) => {
-        e.preventDefault();
-        const id = document.getElementById('edit-id').value;
-        const payload = {
-            first_name: document.getElementById('edit-first').value,
-            last_name: document.getElementById('edit-last').value,
-            elo: document.getElementById('edit-elo').value
-        };
-        fetch(`/api/players/${id}`, { method:'PUT', body:JSON.stringify(payload), headers:{'Content-Type':'application/json'} })
-        .then(() => { closeEditModal(); loadPlayers(); });
-    };
-  </script>
+        async function del(id) {
+            const res = await Swal.fire({
+                title: '¿Eliminar jugador?', text: "Se borrarán sus estadísticas.", icon: 'warning',
+                showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Sí, borrar'
+            });
+            if(res.isConfirmed) {
+                await fetch(`/api/players?id=${id}`, {method:'DELETE'});
+                load();
+            }
+        }
+        load();
+    </script>
 </body>
 </html>
