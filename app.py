@@ -1,3 +1,4 @@
+print("--- EL SCRIPT HA EMPEZADO ---")
 from flask import Flask, request, jsonify, render_template, g
 import sqlite3
 import os
