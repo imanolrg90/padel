@@ -17,6 +17,9 @@
         .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:var(--surface); padding:15px; border-radius:12px; border:1px solid var(--border); }
         .btn-back { text-decoration:none; color:var(--text); font-weight:600; display:flex; align-items:center; gap:5px; }
         
+        /* New Player Card */
+        .add-card { background:var(--surface); padding:20px; border-radius:12px; border:1px solid var(--border); margin-bottom:20px; box-shadow:0 2px 4px rgba(0,0,0,0.05); }
+        
         .card { background:var(--surface); border-radius:12px; border:1px solid var(--border); overflow:hidden; box-shadow:0 2px 4px rgba(0,0,0,0.05); }
         
         table { width:100%; border-collapse:collapse; }
@@ -37,6 +40,7 @@
         label { display:block; font-size:0.8rem; font-weight:600; margin-bottom:5px; color:#64748b; }
         input { width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; box-sizing:border-box; font-family:inherit; }
         .btn-save { width:100%; background:#0f172a; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; margin-top:10px; }
+        .btn-add { background:var(--accent); color:black; font-weight:700; width: auto; margin-top:0; padding: 10px 20px;}
     </style>
 </head>
 <body>
@@ -44,6 +48,14 @@
         <div class="header">
             <h2 style="margin:0">👤 Gestión Jugadores</h2>
             <a href="/" class="btn-back"><i class="fas fa-arrow-left"></i> Volver</a>
+        </div>
+        
+        <div class="add-card">
+            <label>Crear Nuevo Jugador</label>
+            <div style="display:flex; gap:10px; margin-top:5px;">
+                <input type="text" id="new-p-name" placeholder="Nombre del jugador (Ej: Juan Pérez)">
+                <button class="btn-save btn-add" onclick="createPlayer()">Añadir</button>
+            </div>
         </div>
         
         <div class="card">
@@ -92,6 +104,24 @@
                     </td>
                 </tr>
             `).join('');
+        }
+
+        // --- NUEVA FUNCIÓN: CREAR JUGADOR ---
+        async function createPlayer() {
+            const name = document.getElementById('new-p-name').value;
+            if(!name) return Swal.fire('Error', 'Escribe un nombre', 'warning');
+
+            const r = await fetch('/api/players', {
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({ name: name })
+            });
+
+            if((await r.json()).ok) {
+                document.getElementById('new-p-name').value = ''; // Limpiar input
+                Swal.fire({toast:true, position:'top-end', icon:'success', title:'Jugador Creado', timer:1500, showConfirmButton:false});
+                load(); // Recargar lista
+            }
         }
 
         function openEdit(p) {
